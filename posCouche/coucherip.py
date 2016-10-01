@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-# NumPy
 import numpy as np
 from scipy.signal import argrelmin
+from scipy.constants import m_p, e, pi 
     
-def coucherip(R, Z, B0, freq, n, ep, A):
+def coucherip(R, Z, B0=3.86, freq=55, n=1, ep=+1, A=1):
     """
     Calculates the radius of the Ion Cyclotron Resonance layer, 
     taking into account the magnetic ripple.
@@ -19,24 +19,25 @@ def coucherip(R, Z, B0, freq, n, ep, A):
     Arguments:
     - R: Large radius [m]
     - Z: vertical position [m]
-    - B0: magnetic field at plasma center [T]
+    - B0: magnetic field at plasma center (R0=2.37m) [T]
     - freq: RF frequency [MHz]
     - n: harmonic number (1, 2, ...)
     - ep: +1 or -1. 
         +1 : Gives the either the maximum radius (under in-between coils) 
         -1 : Gives the minimum radius (under the coil)
-    - A: mass number, ie. total number of protons and neutrons
+    - A: mass number, ie. total number of protons and neutrons. 
+        Recall: A(H)=1, A(D)=2, A(He)=4, A(He-3)=3
     
     Returns:
     - res_cond: the resonance condition f_ci - f_rf/n with ripple [Hz]
     - R_ripple: Radius of the resonance layer [m]
     - R_wo_ripple: Radius of the resonance layer without ripple [m]
    
+    TODO: should be use Itor as input args instead of B0 ? 
+    
     Authors: V.Basiuk, J.Hillairet
     """
-    # Import some physical constants from scipy.constants
-    from scipy.constants import m_p, e, pi 
-    # Convert into numpy array, because we need some array methofs
+    # Convert into numpy array, because we need some array methods
     R = np.array(R)
     Z = np.array(Z)  
     
@@ -98,17 +99,33 @@ if __name__ == '__main__':
     from matplotlib.pyplot import *
     # Generate a R,Z grid
     z = np.linspace(-1.2, 1.2, 101)
-    r = np.linspace(2.3-1, 2.3+1, 501)     
+    r = np.linspace(1.5, 3.5, 501)     
     R, ZZ = np.meshgrid(r, z)
     
-    res_cond, R_ripple, R_wo_ripple = coucherip(R, ZZ, 
-                                                B0=3.78462668, freq=55, 
-                                                n=1, ep=-1, A=1)
+    B0=3.86
+    freq=55
+    ns=[1,2,3]
+    A=1
+    
     figure(1)
-    plot(R_ripple, z)
-    plot(R_wo_ripple, z)
+    clf()
+    
+    for n in ns:    
+        res_cond, R_ripple_min, R_wo_ripple = coucherip(R, ZZ, B0, freq, n, -1, A)
+        res_cond, R_ripple_max, R_wo_ripple = coucherip(R, ZZ, B0, freq, n, +1, A)
+        
+        plot(R_ripple_max, z)
+        plot(R_ripple_min, z)
+        plot(R_wo_ripple, z, '--', lw=2)
+     
+    axis('equal')
     
     figure(2)
-    pcolor(R, ZZ, np.log(np.abs(res_cond)))
+    clf()
+    pcolor(R, ZZ, np.log(np.abs(res_cond)), cmap='inferno_r')
     colorbar()
+    axis('equal')
     
+    plot(R_ripple_max, z)
+    plot(R_ripple_min, z)
+    plot(R_wo_ripple, z, '--', lw=2)
