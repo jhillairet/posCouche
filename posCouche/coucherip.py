@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # NumPy
 import numpy as np
+from scipy.signal import argrelmin
     
 def coucherip(R, Z, B0, freq, n, ep, A):
     """
     Calculates the radius of the Ion Cyclotron Resonance layer, 
-    taking into account the magnetic ripple. 
+    taking into account the magnetic ripple.
+    
     Three values are returned: 
      - the resonance condition  
      - the maximum radius (under in-between coils)    
@@ -28,6 +30,9 @@ def coucherip(R, Z, B0, freq, n, ep, A):
     - R_ripple: Radius of the resonance layer [m]
     - R_wo_ripple: Radius of the resonance layer without ripple [m]
 
+    Warning: if the span of R is too wide (more than [R0-a,R0+a]), 
+             you may obtain incorrect "spiky" results 
+             (ie the code can't distinguish between resonance layers)
     
     Authors: V.Basiuk, J.Hillairet
     """
@@ -54,30 +59,58 @@ def coucherip(R, Z, B0, freq, n, ep, A):
     res_cond = fci*rip - freq*1e6/n 
     res_cond_wo_rip = fci - freq*1e6/n      
 
-    # TODO ? check if a solution exists
-          
-    # Radii which minimize the above conditions
-    # flat is necessary is the dimension of the R array > 1
-    # axis=1 leads to return the radii for each Z values
-    if np.ndim(res_cond) == 1:
-        R_ripple = R.flat[np.argmin(np.abs(res_cond))]
-        R_wo_ripple = R.flat[np.argmin(np.abs(res_cond_wo_rip))]
-    else:
-        R_ripple = R.flat[np.argmin(np.abs(res_cond), axis=1)]
-        R_wo_ripple = R.flat[np.argmin(np.abs(res_cond_wo_rip), axis=1)]
+    # output array initialisation
+    R_ripple = np.zeros(Z.shape[0])
+    R_wo_ripple = np.zeros(Z.shape[0])
     
+    # find if a solution exists Z by Z (ie. line by line)
+    # One could have made the calculation directly for the full array,
+    # but then you may find incorrect solutions (for high Z) 
+    # because sometime there is simply no solution at all
+    for idz,z in enumerate(Z):   
+        res_cond_z = res_cond[idz,:]
+
+        # Radii which minimize the resonance condition wo ripple
+        # (Gets the index of the closest value to 0)
+        R_wo_ripple[idz] = R.flat[np.argmin(np.abs(res_cond_wo_rip))]
+        
+        # Check if a solution exists for the ripple case.
+        # If a continuous function has values of opposite sign inside an interval,
+        # then it has a root in that interval (Bolzano's theorem)                        
+        if (np.sign(np.min(res_cond_z)) == -1) & (np.sign(np.max(res_cond_z)) == +1):
+            # Depending of the radius R range, you may find few different solutions 
+            # (which are in fact harmonics resonance layers)
+            # The solution we look for is the one closest to the resonance layer wo ripple
+           
+            # Get the relative minimas of the resonance condition
+            idx_relmin, = argrelmin(np.abs(res_cond_z)) # returns a tuple of ndarray
+            # Select the index which corresponding values is the closest 
+            # of resonance layer wo ripple
+            idx_res = idx_relmin[np.argmin(np.abs(R.flat[idx_relmin] - R_wo_ripple[idz]))]
+            R_ripple[idz] = R.flat[idx_res]
+
+        else:
+            # no resonance condition satisfied
+            R_ripple[idz] = np.NAN
+
     return res_cond, R_ripple, R_wo_ripple
     
-
 # The following code is run if one executes this file directly      
 if __name__ == '__main__':
     from matplotlib.pyplot import *
     # Generate a R,Z grid
-    z = np.linspace(-1.2, 0, 50)    
-    R, ZZ = np.meshgrid(np.linspace(2.0, 2.9, 501), z)
-    res_cond, R_ripple, R_wo_ripple= coucherip(R, ZZ, 3.785, 57, 1, -1, 1)
-    print(R_ripple, R_wo_ripple)
-    figure()
+    z = np.linspace(-1.2, 1.2, 101)
+    r = np.linspace(2.3-1, 2.3+1, 501)     
+    R, ZZ = np.meshgrid(r, z)
+    
+    res_cond, R_ripple, R_wo_ripple = coucherip(R, ZZ, 
+                                                B0=3.78462668, freq=55, 
+                                                n=1, ep=-1, A=1)
+    figure(1)
     plot(R_ripple, z)
     plot(R_wo_ripple, z)
+    
+    figure(2)
+    pcolor(R, ZZ, np.log(np.abs(res_cond)))
+    colorbar()
     
