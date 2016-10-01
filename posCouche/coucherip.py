@@ -8,11 +8,11 @@ def coucherip(R, Z, B0, freq, n, ep, A):
     Calculates the radius of the Ion Cyclotron Resonance layer, 
     taking into account the magnetic ripple.
     
-    Three values are returned: 
+    T values are returned: 
      - the resonance condition  
-     - the maximum radius (under in-between coils)    
-     - the minimum radius (under the coils) 
-    
+     - the radius of the resonance layer
+     - the radius of the resonance layer without ripple
+   
     The ripple function is calculated from an analytical 
     from V.Basiuk et al., Fusion Technology 26 (Nov 1994) p.222-226
     
@@ -22,18 +22,16 @@ def coucherip(R, Z, B0, freq, n, ep, A):
     - B0: magnetic field at plasma center [T]
     - freq: RF frequency [MHz]
     - n: harmonic number (1, 2, ...)
-    - ep: +1 or -1
+    - ep: +1 or -1. 
+        +1 : Gives the either the maximum radius (under in-between coils) 
+        -1 : Gives the minimum radius (under the coil)
     - A: mass number, ie. total number of protons and neutrons
     
     Returns:
     - res_cond: the resonance condition f_ci - f_rf/n with ripple [Hz]
     - R_ripple: Radius of the resonance layer [m]
     - R_wo_ripple: Radius of the resonance layer without ripple [m]
-
-    Warning: if the span of R is too wide (more than [R0-a,R0+a]), 
-             you may obtain incorrect "spiky" results 
-             (ie the code can't distinguish between resonance layers)
-    
+   
     Authors: V.Basiuk, J.Hillairet
     """
     # Import some physical constants from scipy.constants
