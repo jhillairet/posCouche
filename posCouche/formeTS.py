@@ -6,7 +6,7 @@ def formeTS(shot):
     """
     Rparoi,Zparoi,Rext,Zext,t = formeTS(shot)
     
-    Arguments
+    Arguments:
     - shot: shot number
     
     Returns:
@@ -18,6 +18,9 @@ def formeTS(shot):
     
     @author: V.Basiuk, J.Hillairet
     """
+    if (shot <= 0) or (not isinstance(shot, int)):
+        raise ValueError('Shot number should be a positive integer')
+        
     # vacuum chamber profile    
     wall = pw.tsmat(shot, 'APOLO;+Parametres;Paroi')
     R_wall = wall[:,0]
@@ -40,20 +43,20 @@ def formeTS(shot):
    
     return R_wall, Z_wall, R_ext, Z_ext, t
     
-
+        
 # Below a test code which is run only if this file is executed directly
 if __name__ == '__main__':
-    from matplotlib.pyplot import *
+    import matplotlib.pyplot as plt
     
     R_wall, Z_wall, R_ext, Z_ext, t = formeTS(47979)
     
-    figure()
-    plot(R_wall, Z_wall, 'k', lw=2)
-    axis('equal')
+    fig, ax = plt.subplots(1,1)
+    ax.plot(R_wall, Z_wall, 'k', lw=2)
+    ax.axis('equal')
     
     # plasma profile at the middle of the shot
-    R_e = R_ext[np.round(R_ext.shape[0]/2)]
-    Z_e = Z_ext[np.round(R_ext.shape[0]/2)]
-    plot(R_e, Z_e, 'b')
+    R_e = R_ext[int(len(R_ext)/2)]
+    Z_e = Z_ext[int(len(R_ext)/2)]
+    ax.plot(R_e, Z_e, 'b')
     
     
