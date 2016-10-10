@@ -3,7 +3,7 @@ import numpy as np
 from scipy.signal import argrelmin
 from scipy.constants import m_p, e, pi 
     
-def coucherip(R, Z, B0=3.86, freq=55, n=1, ep=+1, A=1):
+def IC_resonance_radius_ripple(R, Z, B0=3.86, freq=55, n=1, ep=+1, A=1):
     """
     Calculates the radius of the Ion Cyclotron Resonance layer, 
     taking into account the magnetic ripple.
@@ -111,8 +111,10 @@ if __name__ == '__main__':
     clf()
     
     for n in ns:    
-        res_cond, R_ripple_min, R_wo_ripple = coucherip(R, ZZ, B0, freq, n, -1, A)
-        res_cond, R_ripple_max, R_wo_ripple = coucherip(R, ZZ, B0, freq, n, +1, A)
+        res_cond, R_ripple_min, R_wo_ripple = IC_resonance_radius_ripple(
+                                                    R, ZZ, B0, freq, n, -1, A)
+        res_cond, R_ripple_max, R_wo_ripple = IC_resonance_radius_ripple(
+                                                    R, ZZ, B0, freq, n, +1, A)
         
         plot(R_ripple_max, z)
         plot(R_ripple_min, z)

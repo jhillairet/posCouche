@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-     
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
@@ -8,35 +7,42 @@ import warnings
 from pywed import tsbase, tsmat, PyWEDException
 
 from formeTS import formeTS
-from coucherip import coucherip
+from coucherip import IC_resonance_radius_ripple
 
 from scipy.constants import m_p, e
 
-def poscouche(shot=None, Itor=None, shot_time=None, freq=55, R0=2.40, a=0.80):
+def poscouche(shot=None, time=None, Itor=None, freq=55):
     """
     Poscouche
     
     Calculates and display the locations of Ion Cyclotron Resonance 
     layers for Hydrogen and Deuterium.
     
-    Optionnal Arguments:
+    Keywords Arguments:
     - shot: shot number
-    - Itor: current in toroidal coils [A] (default 1250 A)
-    - shot_time: default time = time at the middle of the shot  [s]
-    - freq: RF frequency [MHz] (default 55 MHz)
-    - R0: Major radius [m]. (default 2.40 m)
-    - a: minor radius [m]. (default 0.80 m)
+    - time: shot time [s] (default: time at the middle of the shot)  
+    - Itor: current in toroidal coils [A] (default: 1250)
+    - freq: RF frequency [MHz] (default: 55)
     
     Returns nothing
     
     Examples:
-       >> poscouche()
        >> poscouche(freq=60)
+       >> poscouche(Itor=900)
+       >> poscouche(Itor=900, freq=60)
+       >>
+       or:
+       >> poscouche(shot=47979)
+       >> poscouche(shot=47979, time=10)
     
     @author: Vincent Basiuk, Julien Hillairet
     """      
-    # WEST configuration > 48451
-
+    # NB: WEST configuration > 48451
+    
+    # large and minor radius in meter
+    R0 = 2.37
+    a = 0.80
+    
     # set default values if shot number not passed
     if shot is None:
         # samin: small radius
@@ -56,7 +62,7 @@ def poscouche(shot=None, Itor=None, shot_time=None, freq=55, R0=2.40, a=0.80):
         # Antenna positions
         pos = [3.3, 3.3, 3.3]     
         # shot time 
-        shot_time = 5    
+        time = 5    
         
         if Itor is None:
             Itor = 1250 # A
@@ -70,30 +76,30 @@ def poscouche(shot=None, Itor=None, shot_time=None, freq=55, R0=2.40, a=0.80):
             pfci, t_pfci = tsbase(shot, 'SPUISS', nargout=2)
             pos = tsbase(shot, 'SPOSFCI', nargout=1)
             
-            # Set the shot_time to the time of max ICRH power
+            # Set the shot time to the time of max ICRH power
             # Otherwise set the it to the middle of the shot
-            if shot_time is None:
+            if time is None:
                 if pfci is not None:
-                    shot_time = t_pfci[np.where(pfci == np.max(pfci))]
+                    time = t_pfci[np.where(pfci == np.max(pfci))]
                 else: 
                     if shot < 28540:
-                        shot_time = np.max(t)/2
+                        time = np.max(t)/2
                     else:
-                        shot_time = np.max(ta[xa>0])/2
+                        time = np.max(ta[xa>0])/2
 
-            # Plasma properties at shot_time
-            R0 = x[np.argmin(np.abs(t - shot_time))]
-            a = xa[np.argmin(np.abs(t - shot_time))]
-            #axe = R0 + d[np.argmin(np.abs(t - shot_time))]
+            # Plasma properties at time
+            R0 = x[np.argmin(np.abs(t - time))]
+            a = xa[np.argmin(np.abs(t - time))]
+            #axe = R0 + d[np.argmin(np.abs(t - time))]
 
-            # Current in toroidal coils at the shot_time
+            # Current in toroidal coils at the time
             if shot < 20100:
                 Itor = tsmat(shot, 'EXP=T=S;EXP=T=S;ITOR')
             if shot < 20600:
                 Itor = tsmat(shot, 'EXP=T=S;GENERAL;ITOR')
             else:
                 Itor, tsi = tsbase(shot, 'SITOR', nargout=2)
-            Itor = Itor[np.argmin(np.abs(tsi - shot_time))] 
+            Itor = Itor[np.argmin(np.abs(tsi - time))] 
                         
         except PyWEDException:
             raise PyWEDException('Error with tsbase')
@@ -105,7 +111,7 @@ def poscouche(shot=None, Itor=None, shot_time=None, freq=55, R0=2.40, a=0.80):
     if shot is not None:
         if shot > 28540:
             Rparoi, Zparoi, Rext, Zext, t = formeTS(shot)
-            ind_t = np.argmin(np.abs(t - shot_time))
+            ind_t = np.argmin(np.abs(t - time))
             ax.plot(Rparoi, Zparoi, 'k', lw=2)
             ax.plot(Rext[ind_t,:], Zext[ind_t,:], 'b', lw=1)
     else:
@@ -118,7 +124,7 @@ def poscouche(shot=None, Itor=None, shot_time=None, freq=55, R0=2.40, a=0.80):
     ax.axis('equal')
     ax.set_xlabel('R [m]', fontsize=14)
     ax.set_ylabel('Z [m]', fontsize=14)
-    ax.set_title('Shot #{}@t={}s'.format(shot, shot_time), fontsize=14)
+    ax.set_title('Shot #{}@t={}s'.format(shot, time), fontsize=14)
     
     # plot antenna positions and frequencies
     ax.plot([pos[0], pos[0]],[-0.6, 0.6], 'c',
@@ -141,7 +147,6 @@ def poscouche(shot=None, Itor=None, shot_time=None, freq=55, R0=2.40, a=0.80):
     # ICRH Resonance theoretical frequencies (H,D)
     R = np.linspace(1.5, 3.5, 501) # radius 30% larger than [R0+/-a]
     B = 0.0073*Itor/R
-    R0 = 2.37
     B0 = 0.0073*Itor/R0
     fp = e*B/(2*np.pi*m_p*1e6)
     A = 1
@@ -161,8 +166,10 @@ def poscouche(shot=None, Itor=None, shot_time=None, freq=55, R0=2.40, a=0.80):
             if ind.size:
                 res_layerH = R[ind[0]]
     
-                dummy, R_ripple_max, R_wo_ripple = coucherip(RR, ZZ, B0, f, n, ep=+1, A=A)    
-                dummy, R_ripple_min, R_wo_ripple = coucherip(RR, ZZ, B0, f, n, ep=-1, A=A)    
+                dummy, R_ripple_max, R_wo_ripple = IC_resonance_radius_ripple(
+                                                RR, ZZ, B0, f, n, ep=+1, A=A)    
+                dummy, R_ripple_min, R_wo_ripple = IC_resonance_radius_ripple(
+                                                RR, ZZ, B0, f, n, ep=-1, A=A)    
       
                 print(R_ripple_max)
                 
@@ -172,12 +179,11 @@ def poscouche(shot=None, Itor=None, shot_time=None, freq=55, R0=2.40, a=0.80):
                 print('Resonance radius {}H = {} m'.format(n, R_wo_ripple[0]))
                 cur_col = next(colours)
                 ax.axvline(R_wo_ripple[0], color=cur_col, ls='--', lw=2)
-                ax.text(x=res_layerH+0.01, y=0, s='{}H@{}'.format(n,f), 
+                ax.text(x=res_layerH+0.03, y=0, s='{}H@{} MHz'.format(n,f), 
                         rotation=90, fontsize=14, color=cur_col)
         
 if __name__ == '__main__':
-    #poscouche(freq=60)
-    #poscouche(freq=55, Itor=900)
-    poscouche(freq=[50, 55, 60], Itor=1250)
-    #poscouche(shot=47979, shot_time=10)
+    poscouche(freq=55, Itor=900)
+    #poscouche(freq=[50, 55, 60], Itor=1250)
+    #poscouche(shot=47979, time=10)
        
