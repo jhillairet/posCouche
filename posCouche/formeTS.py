@@ -2,12 +2,12 @@
 import pywed as pw
 import numpy as np
     
-def formeTS(pulse):
+def formeTS(shot):
     """
-    Rparoi,Zparoi,Rext,Zext,t = formeTS(numchoc)
+    Rparoi,Zparoi,Rext,Zext,t = formeTS(shot)
     
     Arguments
-    - pulse: pulse number
+    - shot: shot number
     
     Returns:
     - R_wall: radius of the vacuum chamber walls [m]
@@ -19,12 +19,12 @@ def formeTS(pulse):
     @author: V.Basiuk, J.Hillairet
     """
     # vacuum chamber profile    
-    wall = pw.tsmat(pulse, 'APOLO;+Parametres;Paroi')
+    wall = pw.tsmat(shot, 'APOLO;+Parametres;Paroi')
     R_wall = wall[:,0]
     Z_wall = wall[:,1]
     
     # small radius vs time
-    y, t = pw.tsbase(pulse, 'GRHO', nargout=2)
+    y, t = pw.tsbase(shot, 'GRHO', nargout=2)
     t = t[:,0]
     
     # poloidal profile (assumed circular)
@@ -46,10 +46,12 @@ if __name__ == '__main__':
     from matplotlib.pyplot import *
     
     R_wall, Z_wall, R_ext, Z_ext, t = formeTS(47979)
+    
+    figure()
     plot(R_wall, Z_wall, 'k', lw=2)
     axis('equal')
     
-    # plasma profile at the middle of the pulse
+    # plasma profile at the middle of the shot
     R_e = R_ext[np.round(R_ext.shape[0]/2)]
     Z_e = Z_ext[np.round(R_ext.shape[0]/2)]
     plot(R_e, Z_e, 'b')
