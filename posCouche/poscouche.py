@@ -7,7 +7,7 @@ import warnings
 from pywed import tsbase, tsmat, PyWEDException
 
 from formeTS import formeTS
-from coucherip import IC_resonance_radius_ripple
+from ic_utils import IC_resonance_radius_ripple
 
 from scipy.constants import m_p, e
 

@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.signal import argrelmin
 from scipy.constants import m_p, e, pi 
-    
+
 def IC_resonance_radius_ripple(R, Z, B0=3.86, freq=55, n=1, ep=+1, A=1):
     """
     Calculates the radius of the Ion Cyclotron Resonance layer, 
