@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Oct 10 17:12:31 2016
+Module initialisation file. 
 
-@author: JH218595
+@author: J.Hillairet
 """

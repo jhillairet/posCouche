@@ -21,7 +21,8 @@ def formeTS(shot):
     if (shot <= 0) or (not isinstance(shot, int)):
         raise ValueError('Shot number should be a positive integer')
         
-    # vacuum chamber profile    
+    # Tore Supra vacuum chamber profile   
+    # TODO : WEST vacuum chamber profile
     wall = pw.tsmat(shot, 'APOLO;+Parametres;Paroi')
     R_wall = wall[:,0]
     Z_wall = wall[:,1]
