@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.signal import argrelmin
-from scipy.constants import m_p, m_n, e, pi, physical_constants
+from scipy.constants import m_p, m_n, e, pi
 
 def WEST_toroidal_field(Itor=1250, R=2.37):
     """
@@ -51,7 +51,19 @@ def ion_mass_and_charge(species='H'):
     q = Z*e
     return m, q
 
-
+def IC_resonance_frequency(B=3.86, species='H'):
+    """
+    Returns the fundamental cyclotron resonance frequency (in MHz)
+    
+    Arguments:
+        B: magnetic field magnitude [T] (default: 3.86)
+        species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf ion_mass_and_charge definition)
+        
+    Returns:
+        f: fundamental cyclotron resonance frequency [MHz]
+    """
+    m, q = ion_mass_and_charge(species)
+    return q*B/(2*pi*m)/1e6
 
 def IC_resonance_radius(Itor=1250, f=55, n=1, species='H'):
     """
@@ -61,7 +73,7 @@ def IC_resonance_radius(Itor=1250, f=55, n=1, species='H'):
         Itor: current in the toroidal coils [A] (default: 1250)
         f: RF frequency [MHz] (default: 55)
         n: harmonic number (1, 2, ...) (default: 1)
-        species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf function definition)
+        species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf ion_mass_and_charge definition)
     
     Returns:
         R_ic: Ion Cyclotron Resonance radius [m]
@@ -69,11 +81,11 @@ def IC_resonance_radius(Itor=1250, f=55, n=1, species='H'):
     """
     # Toroidal field at R0
     R0 = 2.37
-    B0 = WEST_toroidal_field(Itor=Itor, R=R0) 
+    B0 = WEST_toroidal_field(Itor=Itor, R=R0)
     # ion mass 
     m, q = ion_mass_and_charge(species)
     # cyclotron resonance radius
-    R_ic = n*(B0*R0)/(f*1e6*2*pi) 
+    R_ic = n*(q/m)*(B0*R0)/(2*pi*f*1e6) 
     
     return R_ic
     
@@ -81,14 +93,6 @@ def IC_resonance_radius_ripple(R, Z, Itor=1250, freq=55, n=1, species='H', ep=+1
     """
     Calculates the radius of the Ion Cyclotron Resonance layer, 
     taking into account the magnetic ripple.
-    
-    T values are returned: 
-     - the resonance condition  
-     - the radius of the resonance layer
-     - the radius of the resonance layer without ripple
-   
-    The ripple function is calculated from an analytical 
-    from V.Basiuk et al., Fusion Technology 26 (Nov 1994) p.222-226
     
     Arguments:
     - R: Large radius [m]
@@ -99,15 +103,14 @@ def IC_resonance_radius_ripple(R, Z, Itor=1250, freq=55, n=1, species='H', ep=+1
     - ep: +1 or -1. 
         +1 : Gives the either the maximum radius (under in-between coils) 
         -1 : Gives the minimum radius (under the coil)
-    - species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf function definition)
+    - species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf ion_mass_and_charge definition)
     
     Returns:
-    - res_cond: the resonance condition f_ci - f_rf/n with ripple [Hz]
     - R_ripple: Radius of the resonance layer [m]
-    - R_wo_ripple: Radius of the resonance layer without ripple [m]
-   
-    TODO: should be use Itor as input args instead of B0 ? 
-    
+
+    References: The ripple function is calculated from an analytical 
+    from V.Basiuk et al., Fusion Technology 26 (Nov 1994) p.222-226
+     
     Authors: V.Basiuk, J.Hillairet
     """
     # Convert into numpy array, because we need some array methods
@@ -162,14 +165,17 @@ def IC_resonance_radius_ripple(R, Z, Itor=1250, freq=55, n=1, species='H', ep=+1
             idx_relmin, = argrelmin(np.abs(res_cond_z)) # returns a tuple of ndarray
             # Select the index which corresponding values is the closest 
             # of resonance layer wo ripple
-            idx_res = idx_relmin[np.argmin(np.abs(R.flat[idx_relmin] - R_wo_ripple[idz]))]
-            R_ripple[idz] = R.flat[idx_res]
-
+            try:
+                idx_res = idx_relmin[np.argmin(np.abs(R.flat[idx_relmin] - R_wo_ripple[idz]))]
+                R_ripple[idz] = R.flat[idx_res]
+            except ValueError:
+                # no resonance condition satisfied in the domain range
+                R_ripple[idz] = np.NAN
         else:
-            # no resonance condition satisfied
+            # no resonance condition satisfied in the domain range
             R_ripple[idz] = np.NAN
 
-    return res_cond, R_ripple, R_wo_ripple
+    return R_ripple
     
 # The following code is run if one executes this file directly      
 if __name__ == '__main__':
@@ -188,23 +194,24 @@ if __name__ == '__main__':
     clf()
     
     for n in ns:    
-        res_cond, R_ripple_min, R_wo_ripple = IC_resonance_radius_ripple(
-                                                    R, ZZ, Itor, freq, n, species, -1)
-        res_cond, R_ripple_max, R_wo_ripple = IC_resonance_radius_ripple(
-                                                    R, ZZ, Itor, freq, n, species, +1)
+        R_wo_ripple = IC_resonance_radius(Itor, freq, n, species)
+        
+        R_ripple_min = IC_resonance_radius_ripple(
+                              R, ZZ, Itor, freq, n, species, -1)
+        R_ripple_max = IC_resonance_radius_ripple(
+                              R, ZZ, Itor, freq, n, species, +1)
         
         plot(R_ripple_max, z)
         plot(R_ripple_min, z)
-        plot(R_wo_ripple, z, '--', lw=2)
+        axvline(R_wo_ripple, ls='--', lw=2)
      
     axis('equal')
     
     figure(2)
     clf()
-    pcolor(R, ZZ, np.log(np.abs(res_cond)), cmap='inferno_r')
-    colorbar()
+    #pcolor(R, ZZ, np.log(np.abs(res_cond)), cmap='inferno_r')
     axis('equal')
     
     plot(R_ripple_max, z)
     plot(R_ripple_min, z)
-    plot(R_wo_ripple, z, '--', lw=2)
+    axvline(R_wo_ripple, ls='--', lw=2)
