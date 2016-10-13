@@ -1,9 +1,83 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from scipy.signal import argrelmin
-from scipy.constants import m_p, e, pi 
+from scipy.constants import m_p, m_n, e, pi, physical_constants
 
-def IC_resonance_radius_ripple(R, Z, B0=3.86, freq=55, n=1, ep=+1, A=1):
+def WEST_toroidal_field(Itor=1250, R=2.37):
+    """
+    Returns the WEST toroidal field magnitude as a function of the radius R
+    and the current flowing in the toroidal coils
+    
+    Arguments:
+        - Itor: current in the toroidal coils [A] (default: 1250)
+        - R: radius [m] (default: 2.37)
+        
+    Returns:
+        - B: Magnetic field at R [T]
+    """
+    return 0.0073*Itor/R
+
+def ion_mass_and_charge(species='H'):
+    """
+    Returns the fully ion isotope species mass in [kg]
+    
+    m, q = ion_mass_and_charge(species)
+    
+    Argument:
+        - species : 'H', (or '1H', 'hydrogen', 'proton', 'protium'), 
+                    'D', (or '2D', 'deuterium', 'deuteron')
+                    'T', (or '3H', 'tritium')
+                    'He', (or '4He', 'helium')
+                    '3He', (or 'helion')
+    Returns:
+        - m: ion mass [kg]
+        - q: ion electric charge [C]
+    """
+    SPECIES=str.upper(species)
+    if SPECIES in ('H', '1H', 'HYDROGEN', 'PROTIUM'):
+        A = 1; Z = 1
+    elif SPECIES in ('D', '2H', 'DEUTERIUM', 'DEUTERON'):
+        A = 2; Z = 1
+    elif SPECIES in ('T', '3H', 'TRITIUM'):
+        A = 3; Z = 1
+    elif SPECIES in ('HE', '4HE', 'HELIUM'):
+        A = 4; Z = 2
+    elif SPECIES in ('3HE', 'HELION'):
+        A = 3; Z = 2
+    else:
+        raise ValueError('Incorrect species argument: {}'.format(species))
+        
+    m = Z*m_p + (A-Z)*m_n
+    q = Z*e
+    return m, q
+
+
+
+def IC_resonance_radius(Itor=1250, f=55, n=1, species='H'):
+    """
+    Calculates the radius of the Ion Cyclotron resonance layer.
+    
+    Arguments:
+        Itor: current in the toroidal coils [A] (default: 1250)
+        f: RF frequency [MHz] (default: 55)
+        n: harmonic number (1, 2, ...) (default: 1)
+        species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf function definition)
+    
+    Returns:
+        R_ic: Ion Cyclotron Resonance radius [m]
+        
+    """
+    # Toroidal field at R0
+    R0 = 2.37
+    B0 = WEST_toroidal_field(Itor=Itor, R=R0) 
+    # ion mass 
+    m, q = ion_mass_and_charge(species)
+    # cyclotron resonance radius
+    R_ic = n*(B0*R0)/(f*1e6*2*pi) 
+    
+    return R_ic
+    
+def IC_resonance_radius_ripple(R, Z, Itor=1250, freq=55, n=1, species='H', ep=+1):
     """
     Calculates the radius of the Ion Cyclotron Resonance layer, 
     taking into account the magnetic ripple.
@@ -19,14 +93,13 @@ def IC_resonance_radius_ripple(R, Z, B0=3.86, freq=55, n=1, ep=+1, A=1):
     Arguments:
     - R: Large radius [m]
     - Z: vertical position [m]
-    - B0: magnetic field at plasma center (R0=2.37m) [T]
+    - Itor: current in the toroidal coils [A] (default: 1250)
     - freq: RF frequency [MHz]
     - n: harmonic number (1, 2, ...)
     - ep: +1 or -1. 
         +1 : Gives the either the maximum radius (under in-between coils) 
         -1 : Gives the minimum radius (under the coil)
-    - A: mass number, ie. total number of protons and neutrons. 
-        Recall: A(H)=1, A(D)=2, A(He)=4, A(He-3)=3
+    - species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf function definition)
     
     Returns:
     - res_cond: the resonance condition f_ci - f_rf/n with ripple [Hz]
@@ -38,12 +111,16 @@ def IC_resonance_radius_ripple(R, Z, B0=3.86, freq=55, n=1, ep=+1, A=1):
     Authors: V.Basiuk, J.Hillairet
     """
     # Convert into numpy array, because we need some array methods
-    R = np.array(R)
-    Z = np.array(Z)  
+    R = np.asarray(R)
+    Z = np.asarray(Z)  
     
-    R0 = 2.37 # Tore Supra Major Radius
-    B = B0*R0/R # Magnetic field at R
-    fci = e*B/(2*pi*m_p*A) # cyclotron frequency at R
+
+    B = WEST_toroidal_field(Itor, R)
+    B0 = WEST_toroidal_field(Itor)
+    
+    m, q = ion_mass_and_charge(species)
+    
+    fci = q*B/(2*pi*m) # cyclotron frequency at R
     
     X = R - 2.04
     Y = 0.52*X + 1
@@ -102,19 +179,19 @@ if __name__ == '__main__':
     r = np.linspace(1.5, 3.5, 501)     
     R, ZZ = np.meshgrid(r, z)
     
-    B0=3.86
+    Itor = 1250
     freq=55
     ns=[1,2,3]
-    A=1
+    species = 'D'
     
     figure(1)
     clf()
     
     for n in ns:    
         res_cond, R_ripple_min, R_wo_ripple = IC_resonance_radius_ripple(
-                                                    R, ZZ, B0, freq, n, -1, A)
+                                                    R, ZZ, Itor, freq, n, species, -1)
         res_cond, R_ripple_max, R_wo_ripple = IC_resonance_radius_ripple(
-                                                    R, ZZ, B0, freq, n, +1, A)
+                                                    R, ZZ, Itor, freq, n, species, +1)
         
         plot(R_ripple_max, z)
         plot(R_ripple_min, z)
