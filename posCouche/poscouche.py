@@ -1,28 +1,35 @@
 # -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+
 import numpy as np
 import warnings
 
 from pywed import tsbase, tsmat, PyWEDException
 
-from formeTS import formeTS
-from ic_utils import IC_resonance_radius_ripple
+# Hack to be able to run this fil directly
+if __name__ == '__main__':
+    from formeTS import vacuum_vessel, LCFS
+    from ic_utils import IC_resonance_radius_ripple, IC_resonance_radius, IC_resonance_frequency, WEST_toroidal_field
+else:
+    from . formeTS import vacuum_vessel, LCFS
+    from . ic_utils import IC_resonance_radius_ripple, IC_resonance_radius, IC_resonance_frequency, WEST_toroidal_field
 
+    
 from scipy.constants import m_p, e
 
-def poscouche(shot=None, time=None, Itor=None, freq=55):
-    """
-    Poscouche
+def poscouche(shot=None, time=None, Itor=None, freq=55, n=1, species='H'):
+    """   
+    Display the locations of Ion Cyclotron Resonance 
+    layers for a given minority ion species for Tore Supra/WEST.
     
-    Calculates and display the locations of Ion Cyclotron Resonance 
-    layers for Hydrogen and Deuterium.
-    
-    Keywords Arguments:
-    - shot: shot number
+    Arguments:
+    - shot: shot number (default:None)
     - time: shot time [s] (default: time at the middle of the shot)  
     - Itor: current in toroidal coils [A] (default: 1250)
     - freq: RF frequency [MHz] (default: 55)
+    - n : harmonic number (1,2,3,...) (default: 1)
+    - species : 'H', 'D', 'T', '3He', '4He' (default: 'H')
     
     Returns nothing
     
@@ -30,7 +37,7 @@ def poscouche(shot=None, time=None, Itor=None, freq=55):
        >> poscouche(freq=60)
        >> poscouche(Itor=900)
        >> poscouche(Itor=900, freq=60)
-       >>
+       >> poscouche(Itor=900, freq=60, n=2)
        or:
        >> poscouche(shot=47979)
        >> poscouche(shot=47979, time=10)
@@ -104,16 +111,20 @@ def poscouche(shot=None, time=None, Itor=None, freq=55):
         except PyWEDException:
             raise PyWEDException('Error with tsbase')
     
-    fig, ax = plt.subplots(1,1)
+    fig, ax = plt.subplots()
     
     # Plot vacuum chamber and plasma LCFS profiles.
     # wall profile available only for shot > 28540        
     if shot is not None:
-        if shot > 28540:
-            Rparoi, Zparoi, Rext, Zext, t = formeTS(shot)
+        R_vv, Z_vv = vacuum_vessel(shot)
+        ax.plot(R_vv, Z_vv, 'k', lw=2)
+
+        try: 
+            Rext, Zext, t = LCFS(shot)
             ind_t = np.argmin(np.abs(t - time))
-            ax.plot(Rparoi, Zparoi, 'k', lw=2)
             ax.plot(Rext[ind_t,:], Zext[ind_t,:], 'b', lw=1)
+        except ValueError:
+            warnings.warn('No LCFS data available, passing.')
     else:
         warnings.warn('No vacuum chamber information: ideal wall profile plotted')
         theta = np.linspace(0, 2*np.pi, 200)
@@ -126,64 +137,65 @@ def poscouche(shot=None, time=None, Itor=None, freq=55):
     ax.set_ylabel('Z [m]', fontsize=14)
     ax.set_title('Shot #{}@t={}s'.format(shot, time), fontsize=14)
     
-    # plot antenna positions and frequencies
-    ax.plot([pos[0], pos[0]],[-0.6, 0.6], 'c',
-             [pos[0], pos[0]+0.1], [-0.6, -0.6],'c',
-             [pos[0], pos[0]+0.1], [0.6, 0.6],'c', lw=2)
-    ax.plot([pos[1], pos[1]], [-0.6, 0.6],'y',
-             [pos[1], pos[1]+0.1], [-0.6, -0.6],'y',
-             [pos[1], pos[1]+0.1], [0.6, 0.6],'y', lw=2)
-    ax.plot([pos[2], pos[2]], [-0.6, 0.6],'c--', 
-             [pos[2], pos[2]+0.1], [-0.6, -0.6],'c--', 
-             [pos[2], pos[2]+0.1], [0.6, 0.6],'c--', lw=2)
-             
-    ax.text(x=pos[0]+0.1, y=0.5, s='Q1: {} m\n   {} MHz'.format(
-            int(pos[0]*100)/100, int(freq[0]*100)/100))
-    ax.text(x=pos[1]+0.1, y=0.3, s='Q4: {} m\n   {} MHz'.format(
-            int(pos[1]*100)/100, int(freq[1]*100)/100))
-    ax.text(x=pos[2]+0.1, y=0.1, s='Q5: {} m\n   {} MHz'.format(
-            int(pos[2]*100)/100, int(freq[2]*100)/100))  
+#    # plot antenna positions and frequencies
+#    ax.plot([pos[0], pos[0]],[-0.6, 0.6], 'c',
+#             [pos[0], pos[0]+0.1], [-0.6, -0.6],'c',
+#             [pos[0], pos[0]+0.1], [0.6, 0.6],'c', lw=2)
+#    ax.plot([pos[1], pos[1]], [-0.6, 0.6],'y',
+#             [pos[1], pos[1]+0.1], [-0.6, -0.6],'y',
+#             [pos[1], pos[1]+0.1], [0.6, 0.6],'y', lw=2)
+#    ax.plot([pos[2], pos[2]], [-0.6, 0.6],'c--', 
+#             [pos[2], pos[2]+0.1], [-0.6, -0.6],'c--', 
+#             [pos[2], pos[2]+0.1], [0.6, 0.6],'c--', lw=2)
+#             
+#    ax.text(x=pos[0]+0.1, y=0.5, s='Q1: {} m\n   {} MHz'.format(
+#            int(pos[0]*100)/100, int(freq[0]*100)/100))
+#    ax.text(x=pos[1]+0.1, y=0.3, s='Q4: {} m\n   {} MHz'.format(
+#            int(pos[1]*100)/100, int(freq[1]*100)/100))
+#    ax.text(x=pos[2]+0.1, y=0.1, s='Q5: {} m\n   {} MHz'.format(
+#            int(pos[2]*100)/100, int(freq[2]*100)/100))  
     
-    # ICRH Resonance theoretical frequencies (H,D)
-    R = np.linspace(1.5, 3.5, 501) # radius 30% larger than [R0+/-a]
-    B = 0.0073*Itor/R
-    B0 = 0.0073*Itor/R0
-    fp = e*B/(2*np.pi*m_p*1e6)
-    A = 1
-    ns = [1,2,3]
-    colours = iter(cm.rainbow(np.linspace(0,1,len(ns)*len(freq))))
-    
-
-    # Plot the resonance layers for the three harmonics k=1,2,3
+    # domain space 
+    R = np.linspace(1.5, 3.5, 501) # arbitrary values for min and max. 
     z = np.linspace(-a, a, 101)
-    RR, ZZ = np.meshgrid(R, z) 
+    RR, ZZ = np.meshgrid(R, z)   
+    
+    B = WEST_toroidal_field(Itor, R)
+
+#    fp = e*B/(2*np.pi*m_p*1e6)
+    fp = IC_resonance_frequency(B, species)    
+    # Plot the resonance layers for the three harmonics k=1,2,3
+    colours = iter(cm.copper(np.linspace(0,1,len(freq))))
+    
+    # only perform the loop for frequencies which are different 
+    freq = np.unique(freq) 
     for f in freq:
-        for n in ns:
-            # index at which the resonance condition 
-            # starts being satisfied
-            ind = np.argwhere(f/n >= fp)
-            print(ind)
-            if ind.size:
-                res_layerH = R[ind[0]]
-    
-                dummy, R_ripple_max, R_wo_ripple = IC_resonance_radius_ripple(
-                                                RR, ZZ, B0, f, n, ep=+1, A=A)    
-                dummy, R_ripple_min, R_wo_ripple = IC_resonance_radius_ripple(
-                                                RR, ZZ, B0, f, n, ep=-1, A=A)    
-      
-                print(R_ripple_max)
+        # index at which the resonance condition 
+        # starts being satisfied
+        ind = np.argwhere(f/n >= fp)
+        if ind.size:
+            res_layerH = R[ind[0]]
+
+            R_wo_ripple = IC_resonance_radius(Itor, f, n, species)
+            
+            R_ripple_max = IC_resonance_radius_ripple(
+                              RR, ZZ, Itor, f, n, ep=+1, species=species)    
+            R_ripple_min = IC_resonance_radius_ripple(
+                              RR, ZZ, Itor, f, n, ep=-1, species=species)    
+
+            cur_col = next(colours)
                 
-                ax.plot(R_ripple_max, z, 'k')   
-                ax.plot(R_ripple_min, z, 'k')   
-    
-                print('Resonance radius {}H = {} m'.format(n, R_wo_ripple[0]))
-                cur_col = next(colours)
-                ax.axvline(R_wo_ripple[0], color=cur_col, ls='--', lw=2)
-                ax.text(x=res_layerH+0.03, y=0, s='{}H@{} MHz'.format(n,f), 
-                        rotation=90, fontsize=14, color=cur_col)
-        
-if __name__ == '__main__':
-    poscouche(freq=55, Itor=900)
-    #poscouche(freq=[50, 55, 60], Itor=1250)
-    #poscouche(shot=47979, time=10)
-       
+            ax.plot(R_ripple_max, z, color=cur_col)   
+            ax.plot(R_ripple_min, z, color=cur_col)   
+                
+            print('Resonance radius {} = {} m'.format(species, R_wo_ripple))
+            ax.axvline(R_wo_ripple, color=cur_col, ls='--', lw=2)
+            ax.text(x=R_wo_ripple+0.03, y=0, s='{}@{} MHz (n={})'.format(species,f,n), 
+                    rotation=90, fontsize=14, color='b')
+            ax.fill_betweenx(z, R_ripple_min, R_ripple_max, alpha=0.2, color=cur_col)
+#if __name__ == '__main__':
+#    poscouche(Itor=900, freq=60, n=2)
+#    poscouche(freq=55, Itor=1250)
+#    
+#    poscouche(freq=[50, 55, 60], Itor=1250)
+#    poscouche(shot=47979, time=10)       
