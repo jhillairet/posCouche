@@ -27,7 +27,7 @@ def vacuum_vessel(shot):
         R_wall = wall[:,0]
         Z_wall = wall[:,1]
     else: # WEST vacuum chamber profile
-        R_wall, Z_wall = np.loadtxt('limiter.txt', skiprows=1, unpack=True)
+        R_wall, Z_wall = np.loadtxt('WEST_vacuum_vessel.txt', skiprows=1, unpack=True)
 
     return R_wall, Z_wall
     
