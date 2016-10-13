@@ -4,6 +4,7 @@
 """
 import pywed as pw
 import numpy as np
+import os
     
 def vacuum_vessel(shot):
     """
@@ -27,7 +28,9 @@ def vacuum_vessel(shot):
         R_wall = wall[:,0]
         Z_wall = wall[:,1]
     else: # WEST vacuum chamber profile
-        R_wall, Z_wall = np.loadtxt('WEST_vacuum_vessel.txt', skiprows=1, unpack=True)
+        # get the absolute path of the filename, in order to work even if launched from other dir
+        filename = os.path.dirname(__file__) + os.sep + 'WEST_vacuum_vessel.txt'
+        R_wall, Z_wall = np.loadtxt(filename, skiprows=1, unpack=True)
 
     return R_wall, Z_wall
     
@@ -48,6 +51,8 @@ def LCFS(shot):
     """
     if (shot <= 0) or (not isinstance(shot, int)):
         raise ValueError('Shot number should be a positive integer')   
+    if shot < 28540:
+        raise ValueError('Shot number should be larger than 28540')
         
     # small radius vs time
     y, t = pw.tsbase(shot, 'GRHO', nargout=2)
@@ -71,7 +76,7 @@ def LCFS(shot):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     
-    R_wall, Z_wall = vacuum_vessel(47979)
+    R_wall, Z_wall = vacuum_vessel(50001)
     R_ext, Z_ext, t = LCFS(47979)
     
     fig, ax = plt.subplots(1,1)
