@@ -174,12 +174,8 @@ def poscouche(shot=None, time=None, Itor=None, freq=55, n=1, species='H'):
         if ind.size:
             res_layerH = R[ind[0]]
 
-            R_wo_ripple = IC_resonance_radius(Itor, f, n, species)
-            
-            R_ripple_max = IC_resonance_radius_ripple(
-                              RR, ZZ, Itor, f, n, ep=+1, species=species)    
-            R_ripple_min = IC_resonance_radius_ripple(
-                              RR, ZZ, Itor, f, n, ep=-1, species=species)    
+            R_wo_ripple, R_ripple_max, R_ripple_min = IC_resonance_radius_ripple(
+                              RR, ZZ, Itor, f, n, species=species)    
 
             cur_col = next(colours)
                 
@@ -188,11 +184,11 @@ def poscouche(shot=None, time=None, Itor=None, freq=55, n=1, species='H'):
                 
             print('Resonance radius for {} = {} m @{} MHz (n={})'.format(species, R_wo_ripple, f, n))
             ax.axvline(R_wo_ripple, color=cur_col, ls='--', lw=2)
-            ax.text(x=R_wo_ripple+0.03, y=0, s='{}@{} MHz (n={})'.format(species,f,n), 
+            ax.text(x=R_wo_ripple+0.05  , y=0, s='{}@{} MHz (n={})'.format(species,f,n), 
                     rotation=90, fontsize=14, color='b')
             ax.fill_betweenx(z, R_ripple_min, R_ripple_max, alpha=0.2, color=cur_col)
-#if __name__ == '__main__':
-#    poscouche(Itor=900, freq=60, n=2)
+if __name__ == '__main__':
+    poscouche(Itor=1250, freq=60, n=1, species='H')
 #    poscouche(freq=55, Itor=1250)
 #    
 #    poscouche(freq=[50, 55, 60], Itor=1250)
