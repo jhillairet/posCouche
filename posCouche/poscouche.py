@@ -126,11 +126,9 @@ def poscouche(shot=None, time=None, Itor=None, freq=55, n=1, species='H'):
         except ValueError:
             warnings.warn('No LCFS data available, passing.')
     else:
-        warnings.warn('No vacuum chamber information: ideal wall profile plotted')
-        theta = np.linspace(0, 2*np.pi, 200)
-        Rext = R0 + a*np.cos(theta)
-        Zext = a*np.sin(theta)
-        ax.plot(Rext, Zext, 'k', lw=2)
+        print('No shot number provided: using WEST vacuum vessel')
+        R_vv, Z_vv = vacuum_vessel(shot=50000)
+        ax.plot(R_vv, Z_vv, 'k', lw=2)       
         
     ax.axis('equal')
     ax.set_xlabel('R [m]', fontsize=14)
@@ -188,7 +186,7 @@ def poscouche(shot=None, time=None, Itor=None, freq=55, n=1, species='H'):
             ax.plot(R_ripple_max, z, color=cur_col)   
             ax.plot(R_ripple_min, z, color=cur_col)   
                 
-            print('Resonance radius {} = {} m'.format(species, R_wo_ripple))
+            print('Resonance radius for {} = {} m @{} MHz (n={})'.format(species, R_wo_ripple, f, n))
             ax.axvline(R_wo_ripple, color=cur_col, ls='--', lw=2)
             ax.text(x=R_wo_ripple+0.03, y=0, s='{}@{} MHz (n={})'.format(species,f,n), 
                     rotation=90, fontsize=14, color='b')
