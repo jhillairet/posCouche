@@ -15,7 +15,7 @@ def WEST_toroidal_field(Itor=1250, R=2.37):
     Returns:
         - B: Magnetic field at R [T]
     """
-    return 0.0073*Itor/R
+    return 0.0073*np.asarray(Itor)/np.asarray(R)
 
 def ion_mass_and_charge(species='H'):
     """
@@ -85,7 +85,7 @@ def IC_resonance_radius(Itor=1250, f=55, n=1, species='H'):
     # ion mass 
     m, q = ion_mass_and_charge(species)
     # cyclotron resonance radius
-    R_ic = n*(q/m)*(B0*R0)/(2*pi*f*1e6) 
+    R_ic = n*(q/m)*(B0*R0)/(2*pi*np.asarray(f)*1e6) 
     
     return R_ic
     
