@@ -5,7 +5,7 @@ posCouche is a Python code to determine the location of the Ion Cyclotron Resona
 
 You can directly launches the jupyter notebook on Binder:
 
-.. image:: https://mybinder.org/badge.svg :target: https://mybinder.org/v2/gh/jhillairet/posCouche/master
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/jhillairet/posCouche/master?filepath=doc%2F)
 
 ## Testing
 run
