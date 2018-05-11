@@ -14,7 +14,13 @@ def WEST_toroidal_field(Itor=1250, R=2.37):
         
     Returns:
         - B: Magnetic field at R [T]
+    
+    Equation:
+        R = 0.0073 * Itor / R
+        where 0.0073 = mu0*2028(turns/coil)*18(coils)/(2pi)
+    
     """
+    
     return 0.0073*np.asarray(Itor)/np.asarray(R)
 
 def ion_mass_and_charge(species='H'):
