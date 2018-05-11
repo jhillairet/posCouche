@@ -57,12 +57,12 @@ def ion_mass_and_charge(species='H'):
     q = Z*e
     return m, q
 
-def IC_resonance_frequency(B=3.86, species='H'):
+def IC_resonance_frequency(B=3.7, species='H'):
     """
     Returns the fundamental cyclotron resonance frequency (in MHz)
     
     Arguments:
-        B: magnetic field magnitude [T] (default: 3.86)
+        B: magnetic field magnitude [T] (default: 3.7)
         species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf ion_mass_and_charge definition)
         
     Returns:
@@ -70,6 +70,22 @@ def IC_resonance_frequency(B=3.86, species='H'):
     """
     m, q = ion_mass_and_charge(species)
     return q*B/(2*pi*m)/1e6
+
+def IC_resonance_magnetic_field(f=55, species='H'):
+    """
+    Returns the magnetic field for which there is an Ion Cyclotron resonance
+    for a given RF frequency.
+
+    Arguments:
+        f: RF frequency [MHz] (default: 55)
+        species: '1H', '2H', '3H', '4He', '3He' (more possibilities, cf ion_mass_and_charge definition)
+
+    Returns:
+        B_ic: resonance magnetic field [T]
+    """
+    m, q = ion_mass_and_charge(species)
+    B_ic = (2*pi*m/q)*np.asarray(f)*1e6
+    return B_ic
 
 def IC_resonance_radius(Itor=1250, f=55, n=1, species='H'):
     """
@@ -94,7 +110,7 @@ def IC_resonance_radius(Itor=1250, f=55, n=1, species='H'):
     R_ic = n*(q/m)*(B0*R0)/(2*pi*np.asarray(f)*1e6) 
     
     return R_ic
-    
+        
 def IC_resonance_radius_ripple(R, Z, Itor=1250, freq=55, n=1, species='H'):
     """
     Calculates the radius of the Ion Cyclotron Resonance layer, 
