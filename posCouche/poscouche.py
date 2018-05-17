@@ -187,9 +187,26 @@ def poscouche(shot=None, time=None, Itor=None, freq=55, n=1, species='H'):
             ax.text(x=R_wo_ripple+0.05  , y=0, s='{}@{} MHz (n={})'.format(species,f,n), 
                     rotation=90, fontsize=14, color='b')
             ax.fill_betweenx(z, R_ripple_min, R_ripple_max, alpha=0.2, color=cur_col)
+
 if __name__ == '__main__':
-    poscouche(Itor=1250, freq=60, n=1, species='H')
-#    poscouche(freq=55, Itor=1250)
-#    
-#    poscouche(freq=[50, 55, 60], Itor=1250)
-#    poscouche(shot=47979, time=10)       
+    #Possible usage of the posCouche function :
+    #poscouche(Itor=1250, freq=60, n=1, species='H')
+    #poscouche(freq=55, Itor=1250)
+    #poscouche(freq=[50, 55, 60], Itor=1250)
+    #poscouche(shot=47979, time=10)       
+    Itor = input('Entrez la valeur du courant toroidal [A] (default: 1250 A) :')
+    if not Itor:
+        Itor = 1250
+    
+    freq = input('Entrez la valeur de la fréquence HF [MHz] (default: 55.5 MHz) :')
+    if not freq:
+        freq = 55.5
+    
+    print('Espèce minoritaire : H. Harmonique par defaut: n=1.')
+    
+    poscouche(Itor=Itor, freq=freq, n=1, species='H')
+    
+    
+
+    
+    
