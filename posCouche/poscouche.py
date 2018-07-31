@@ -204,7 +204,7 @@ if __name__ == '__main__':
     
     print('Espèce minoritaire : H. Harmonique par defaut: n=1.')
     
-    poscouche(Itor=Itor, freq=freq, n=1, species='H')
+    poscouche(Itor=float(Itor), freq=float(freq), n=1, species='H')
     
     
 
