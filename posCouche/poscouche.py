@@ -198,11 +198,11 @@ if __name__ == '__main__':
     if not Itor:
         Itor = 1250
     
-    freq = input('Entrez la valeur de la fréquence HF [MHz] (default: 55.5 MHz) :')
+    freq = input('Entrez la valeur de la frequence HF [MHz] (default: 55.5 MHz) :')
     if not freq:
         freq = 55.5
     
-    print('Espèce minoritaire : H. Harmonique par defaut: n=1.')
+    print('Espece minoritaire : H. Harmonique par defaut: n=1.')
     
     poscouche(Itor=float(Itor), freq=float(freq), n=1, species='H')
     
